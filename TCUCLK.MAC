@@ -1,0 +1,217 @@
+;*********************************************************************
+;
+;       TCUCLK.CMD
+;
+;       Date : 26-Aug-2026     P. Ekstrom
+;
+;*********************************************************************
+;
+; VALID COMMAND LINE ARGUMENTS
+;   /SETTIM - SET OS CLOCK FROM TCU-50
+;   /SETTCU - SET TCU-50 FROM OS TIME
+;   /CHKTCU - CHECK TCU-50 DATE AND TIME
+;
+;---------------------------------------------
+; DEFINE SYSTEM MACROS WE WILL USE
+;
+        .MCALL  DIR$,GTIM$,GMCR$,EXIT$S,QIOW$S,SPWN$,WTSE$
+;
+; BASE ADDRESS OF THE TCU-50 CLOCK
+;
+;TCUBSE  =      0160770            ;DEFAULT FACTORY ADDRESS
+TCUBSE  =      0171200
+;
+; THE TCU-50 DOESN'T HAVE THE YEAR, SO SPECIFY HERE (YY)
+;
+TCUYER  =      26.                ;2-DIGIT YEAR, DECIMAL
+;
+START:  DIR$   #GETMCR            ;REQUEST COMMAND LINE
+        BCS    ERROR              ;ERROR?
+        MOV    #GETMCR+G.MCRB,R0  ;POINT TO BUFFER
+;
+; PROCESS COMMAND LIKE ARGUMENTS
+;
+        ADD    #3,R0              ;SKIP COMMAND NAME
+        CMPB    (R0),#<040>       ;IS IT SPACE?
+        BNE    1$                 ;BRANCH IF NOT
+        ADD    #1,R0              ;SKIP SPACE
+1$:     MOV    R0,SRCPTR
+        JSR    PC,SEARCH
+        BCS    ERROR
+;
+        CMPB   #0,(R5)
+        BEQ    DOTIM
+        CMPB   #1,(R5)
+        BEQ    DOTCU
+        CMPB   #2,(R5)
+        BEQ    DOCHK
+        BR     ERROR
+;
+; SET THE OS DATE & TIME FROM THE TCU-50
+;
+DOTIM:  MOV    #OUTLF,IOBUF
+        MOV    #1,BUFLEN
+        JSR    PC,PRINT
+;
+        JSR    PC,SETDAT
+;        SPWN$  #OUTBUF,#0,#0,#0,#OUTDAT,#20
+        DIR$   #TIMTSK
+        DIR$   #TSKWT
+        BCS    ERROR
+;
+        MOV    #OUTBUF,IOBUF
+        MOV    #OUTBSZ,BUFLEN
+        JSR    PC,PRINT
+        BR     2$
+;
+1$:     MOV    #SPNERR,IOBUF
+        MOV    #SPNESZ,BUFLEN
+        JSR    PC,PRINT
+;
+2$:     BR     DONE
+;
+; SET THE TCU-50 DATE & TIME FROM THE OS
+;
+DOTCU:
+        DIR$   #GETTIM           ;GET TIME FROM THE OS
+        MOV    TIMBUF+G.TIMO,R0  ;GET MONTH FROM BUFFER
+        SWAB   R0                ;MOVE TO UPPER BYTE
+        ADD    TIMBUF+G.TIDA,R0  ;ADD THE DAY
+        SUB    #1,R0             ;ADJUST THE DAY
+        MOV    R0,@#TCUBSE       ;SET ON THE TCU-50
+1$:     CMP    @#TCUBSE,R0       ;DO THEY MATCH?
+        BNE    1$                ;LOOP IF NOT
+        MOV    R0,TCUBSE+4       ;STOP FAST CLOCK
+;
+        MOV    TIMBUF+G.TIHR,R0  ;GET HOURS FROM BUFFER
+        SWAB   R0                ;MOVE TO UPPER BYTE
+        ADD    TIMBUF+G.TIMI,R0  ;ADD THE MINUTES
+        MOV    R0,TCUBSE+2       ;SET ON THE TCU-50
+2$:     CMP    @#TCUBSE+2,R0     ;DO THEY MATCH?
+        BNE    2$                ;LOOP IF NOT
+        MOV    R0,TCUBSE+4       ;STOP FAST CLOCK
+        CLR    R0
+        CLR    @#TCUBSE+4        ;ZERO SECONDS ON TCU-50
+;
+        BR     DONE
+;
+; DISPLAY TIME & DATE FROM THE TCU-50
+;
+DOCHK:  MOV    #OUTLF,IOBUF
+        MOV    #1,BUFLEN
+        JSR    PC,PRINT
+;
+        JSR    PC,SETDAT
+;
+        MOV    #OUTDAT,IOBUF
+        MOV    #20.,BUFLEN
+        JSR    PC,PRINT
+;
+; NORMAL PROGRAM EXIT
+;
+DONE:   EXIT$S
+;
+; PRINT ERROR MESSAGE, THEN EXIT
+;
+ERROR:  MOV    #ARGERR,IOBUF
+        MOV    #ARGESZ,BUFLEN
+        JSR    PC,PRINT
+        BR     DONE
+;
+; SETUP DATE IN OUTBUFFER
+;
+SETDAT: MOV    #TCUBSE,R1
+        MOVB   (R1)+,DAY
+        MOVB   (R1)+,MONTH
+        MOVB   #TCUYER,YEAR
+        MOVB   (R1)+,MIN
+        MOVB   (R1)+,HOUR
+        MOVB   (R1)+,SEC
+        MOV    #OUTDAT,R0
+        MOV    #HOUR,R1
+        MOV    #3,R2
+        CALL   $TIM
+        MOVB   #11,(R0)+
+        CALL   $DAT
+;
+        RTS    PC
+;
+; PRINT TEXT STRING
+;
+IOBUF:  .BLKW  1
+BUFLEN: .BLKW  1
+PRINT:  QIOW$S #IO.WVB,#5,#1,,,,<IOBUF,BUFLEN>
+        RTS    PC
+;
+; SEARCH LIST OF VALID ARGUMENTS FOR ONE FROM
+; THE COMMAND LINE.
+;
+;   SRCPTR - POINTER TO ARGUMENT
+;   ON RETURN: CARRY SET: NOT FOUND, CARRY CLEAR: FOUND
+;              INDEX NUMBER POINTED TO BY R5
+;
+SRCPTR: .BLKW  1            ;POINTER START STORAGE
+SEARCH: MOV    #ARGLST,R5   ;POINTER TO START OF LIST
+1$:     MOV    SRCPTR,R4    ;POINT TO SEARCH STR START
+2$:     CMPB   (R5),#<0>    ;END OF LIST ITEM?
+        BEQ    7$           ;IF SO, WE HAVE A MATCH
+        CMPB   (R4),(R5)    ;COMPARE CHARS
+        BNE    4$           ;CHARS DON'T MATCH, NEXT LIST ITEM
+        INC    R4           ;INCREMENT POINTERS
+        INC    R5           ;ONE STEP
+        BR     2$           ;CHECK AGAIN
+;
+4$:     CMPB   (R5),#<0>    ;END OF LIST ITEM?
+        BEQ    5$           ;IF SO, SKIP TO NEXT
+        INC    R5           ;NEXT CHAR
+        BR     4$           ;CHECK AGAIN
+5$:     ADD    #2,R5        ;SKIP PAST INDEX
+        CMPB   (R5),<377>   ;END OF TABLE?
+        BEQ    6$           ;IF SO, BRANCH
+        BR     1$           ;NEXT LIST ITEM
+7$:     ADD    #1,R5        ;MOVE TO INDEX
+        CLC                 ;CLEAR CARRY FOR SUCCESS
+        BR     8$
+6$:     SEC                 ;SET CARRY FOR ERROR
+8$:     RTS    PC
+;
+; GET MCR COMMAND LINE
+;
+GETMCR: GMCR$
+;
+; GET OS DATE AND TIME
+;
+TIMBUF: .BLKW  8.
+GETTIM: GTIM$  TIMBUF
+TIMTSK: SPWN$  ...TIM,,,,,1,,,OUTDAT,20.
+TSKWT:  WTSE$  1
+;
+; TEXT STRINGS
+;
+        .EVEN
+ARGERR: .ASCII <012><015>/ MISSING OR INVALID ARGUMENT/<015>
+ARGESZ= .-ARGERR
+SPNERR: .ASCII <012><015>/ ERROR SETTING SYSTEM TIME/<015>
+SPNESZ= .-SPNERR
+;
+; BUFFER FOR TIM-COMMAND
+;
+OUTLF:  .ASCII <012><0>
+OUTBUF: .ASCII /TIM   /
+OUTDAT: .BLKB  20.
+OUTBSZ= .-OUTBUF
+HOUR:   .WORD  0
+MIN:    .WORD  0
+SEC:    .WORD  0
+YEAR:   .WORD  TCUYER
+MONTH:  .WORD  0
+DAY:    .WORD  0
+;
+; LOOKUP LIST FOR COMMAND LINE ARGUMENTS
+;
+ARGLST: .ASCII <057>/SETTIM/<0><0>
+        .ASCII <057>/SETTCU/<0><1>
+        .ASCII <057>/CHKTCU/<0><2>
+        .BYTE  <377>,<377>
+;
+        .END   START
