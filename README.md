@@ -29,7 +29,7 @@ The valid arguments are:
   /IDENT    The utility displays its version info and exits.
 
   To build the utility, simply run the TCUBLD,CMD command file:
-"
+```
   \>@tcubld
   \>;*********************************************************************
   \>;
@@ -48,6 +48,6 @@ The valid arguments are:
   \>PIP *.TSK/PU
   \>INS TCUCLK/TASK=...TCU
   \>@ <EOF>
-"
+```
 If the TCU task is installed, it removes it before continuing, and then it installs it
 again once it has been built. So to test the new version, you can simply run TCU.
