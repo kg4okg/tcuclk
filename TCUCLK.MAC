@@ -1,3 +1,5 @@
+        .TITLE TCUCLK.MAC
+        .NLIST TTM,BEX
 ;*********************************************************************
 ;
 ;       TCUCLK.CMD
@@ -10,6 +12,7 @@
 ;   /SETTIM - SET OS CLOCK FROM TCU-50
 ;   /SETTCU - SET TCU-50 FROM OS TIME
 ;   /CHKTCU - CHECK TCU-50 DATE AND TIME
+;   /IDENT  - SHOW VERSION INFO AND EXIT
 ;
 ;---------------------------------------------
 ; DEFINE SYSTEM MACROS WE WILL USE
@@ -36,52 +39,54 @@ START:  DIR$   #GETMCR            ;REQUEST COMMAND LINE
         CMPB    (R0),#<040>       ;IS IT SPACE?
         BNE    1$                 ;BRANCH IF NOT
         ADD    #1,R0              ;SKIP SPACE
-1$:     MOV    R0,SRCPTR
-        JSR    PC,SEARCH
-        BCS    ERROR
+1$:     MOV    R0,SRCPTR          ;POINTER TO ARGUMENT
+        JSR    PC,SEARCH          ;SEARCH TABLE
+        BCS    ERROR              ;NOT A VALID ARGUMENT
 ;
-        CMPB   #0,(R5)
-        BEQ    DOTIM
-        CMPB   #1,(R5)
-        BEQ    DOTCU
-        CMPB   #2,(R5)
-        BEQ    DOCHK
-        BR     ERROR
+        CMPB   #0,(R5)            ;IF ZERO
+        BEQ    DOTIM              ;SET DATE & TIME IN OS
+        CMPB   #1,(R5)            ;IF ONE
+        BEQ    DOTCU              ;SET DATE & TIME ON TCU
+        CMPB   #2,(R5)            ;IF TWO
+        BEQ    DOCHK              ;SHOW DATE & TIME FROM TCU
+        CMPB   #3,(R5)            ;IF THREE
+        BEQ    DOIDT              ;SHOW PROG INFO AND EXIT
+        BR     ERROR              ;ELSE WE HAVE AN ERROR
 ;
 ; SET THE OS DATE & TIME FROM THE TCU-50
 ;
 DOTIM:  
-        JSR    PC,SETDAT
-        DIR$   #TIMTSK
-        DIR$   #TSKWT
-        CMP    @#ESBBLK,#IS.SUC
-        BNE    1$
+        JSR    PC,SETDAT          ;GET TCU DATE & TIME TO BUFFER
+        DIR$   #TIMTSK            ;SPAWN TIM COMMAND
+        DIR$   #TSKWT             ;WAIT FOR TIM COMMAND TO COMPLETE
+        CMP    @#ESBBLK,#IS.SUC   ;CHECK IF SUCCESS
+        BNE    1$                 ;IF NOT, BRANCH
 ;
-        MOV    #OUTLF,IOBUF
-        MOV    #1,BUFLEN
-        JSR    PC,PRINT
-        MOV    #OUTDAT,IOBUF
-        MOV    #20.,BUFLEN
-        JSR    PC,PRINT
-        BR     2$
+        MOV    #OUTLF,IOBUF       ;POINTER TO AN LF CHAR
+        MOV    #1,BUFLEN          ;JUST ONE CHAR
+        JSR    PC,PRINT           ;PRINT IT
+        MOV    #OUTDAT,IOBUF      ;POINT TO DATE & TIME IN BUFFER
+        MOV    #20.,BUFLEN        ;20. CHARACTERS
+        JSR    PC,PRINT           ;PRINT IT
+        BR     2$                 ;BRANCH FOR SUCCESS
 ;
-1$:     MOV    @#ESBBLK,R1
-        MOV    #SPNESD,R0
-        MOV    #10412,R2
-        CALL   $CBTA
+1$:     MOV    @#ESBBLK,R1        ;GET TASK RETURN CODE
+        MOV    #SPNESD,R0         ;POINTER TO BUFFER
+        MOV    #10412,R2          ;CONVERSION CONFIG
+        CALL   $CBTA              ;DO THE CONVERSION
 ;
-        MOV    #ESBBLK,R2
-        ADD    #2,R2
+        MOV    #ESBBLK,R2         ;GET EXTENDED RETURN CODE
+        ADD    #2,R2       
         MOV    (R2),R1
-        MOV    #SPNEED,R0
-        MOV    #10412,R2
-        CALL   $CBTA
+        MOV    #SPNEED,R0         ;POINTER TO BUFFER
+        MOV    #10412,R2          ;CONVERSION CONFIG
+        CALL   $CBTA              ;DO THE CONVERSION
 ;
-        MOV    #SPNERR,IOBUF
-        MOV    #SPNESZ,BUFLEN
-        JSR    PC,PRINT
+        MOV    #SPNERR,IOBUF      ;POINTER TO ERROR MSG BUFFER
+        MOV    #SPNESZ,BUFLEN     ;LENGTH OF BUFFER
+        JSR    PC,PRINT           ;PRINT IT
 ;
-2$:     BR     DONE
+2$:     BR     DONE               ;BRANCH FOR PROG EXIT
 ;
 ; SET THE TCU-50 DATE & TIME FROM THE OS
 ;
@@ -108,28 +113,35 @@ DOTCU:
 ;
         BR     DONE
 ;
-; DISPLAY TIME & DATE FROM THE TCU-50
-;
-DOCHK:  MOV    #OUTLF,IOBUF
-        MOV    #1,BUFLEN
-        JSR    PC,PRINT
-;
-        JSR    PC,SETDAT
-;
-        MOV    #OUTDAT,IOBUF
-        MOV    #20.,BUFLEN
-        JSR    PC,PRINT
-;
-; NORMAL PROGRAM EXIT
-;
-DONE:   EXIT$S
-;
 ; PRINT ERROR MESSAGE, THEN EXIT
 ;
 ERROR:  MOV    #ARGERR,IOBUF
         MOV    #ARGESZ,BUFLEN
         JSR    PC,PRINT
         BR     DONE
+;
+; DISPLAY TIME & DATE FROM THE TCU-50
+;
+DOCHK:  MOV    #OUTLF,IOBUF      ;POINTER TO LF CHAR
+        MOV    #1,BUFLEN         ;JUST ONE CHAR
+        JSR    PC,PRINT          ;PRINT IT
+;
+        JSR    PC,SETDAT         ;GET DATE & TIME FROM TCU
+;
+        MOV    #OUTDAT,IOBUF     ;POINTER TO BUFFER
+        MOV    #20.,BUFLEN       ;20. CHARACTERS
+        JSR    PC,PRINT          ;PRINT BUFFER
+        BR     DONE              ;BRANCH FOR PROG EXIT
+;
+; SHOW PROGRAM IDENTITY INFO
+;
+DOIDT:  MOV    #IDTMSG,IOBUF     ;POINTER TO IDENT MSG
+        MOV    #IDTMSZ,BUFLEN    ;LENGTH OF MESSAGE
+        JSR    PC,PRINT          ;PRINT IT
+;
+; NORMAL PROGRAM EXIT
+;
+DONE:   EXIT$S
 ;
 ; SETUP DATE IN OUTBUFFER
 ;
@@ -209,6 +221,10 @@ SPNERR: .ASCII <012><015>/ ERROR SETTING SYSTEM TIME /
 SPNESD: .ASCII /    -/
 SPNEED: .ASCII /    /<015>
 SPNESZ= .-SPNERR
+        .EVEN
+IDTMSG: .ASCII <012><015>/TCU-50 UTILITY, VERSION: 01/
+        .ASCII <012><015>/2026 PETER EKSTROM./<015>
+IDTMSZ= .-IDTMSG
 ;
 ; BUFFER FOR TIM-COMMAND
 ;
@@ -229,6 +245,7 @@ DAY:    .WORD  0
 ARGLST: .ASCII <057>/SETTIM/<0><0>
         .ASCII <057>/SETTCU/<0><1>
         .ASCII <057>/CHKTCU/<0><2>
+        .ASCII <057>/IDENT/<0><3>
         .BYTE  <377>,<377>
 ;
         .EVEN
