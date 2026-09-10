@@ -31,6 +31,7 @@ The valid arguments are:
   To build the utility, simply run the TCUBLD,CMD command file:
 
   >@tcubld
+
   >;*********************************************************************
   >;
   >;       TCUBLD.CMD
