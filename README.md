@@ -30,28 +30,24 @@ The valid arguments are:
 
   To build the utility, simply run the TCUBLD,CMD command file:
 
-  >@tcubld
-
-  >;*********************************************************************
-  >;
-  >;       TCUBLD.CMD
-  >;
-  >;       Date : 26-Aug-2026     P. Ekstrom
-  >;
-  >;*********************************************************************
-  >;
-  >INS $MAC
-  >INS $TKB
-  >REM TCU
-  >PIP *.MAC;*/PU,*.CMD/PU
-  >MAC TCUCLK,TCUCLK/-SP=TCUCLK
-  >TKB @TCUTKB.CMD
-  >PIP *.LST;*/DE
-  >PIP *.OBJ;*/DE
-  >PIP *.TSK/PU
-  >INS TCUCLK/TASK=...TCU
-  >@ <EOF>
-
+>@tcubld
+>;*********************************************************************
+>;
+>;       TCUBLD.CMD
+>;
+>;       Date : 26-Aug-2026     P. Ekstrom
+>;
+>;*********************************************************************
+>;
+>REM TCU
+>PIP *.MAC;*/PU,*.CMD/PU
+>MAC TCUCLK,TCUCLK/-SP=TCUCLK
+>TKB @TCUTKB.CMD
+>PIP *.LST;*/DE
+>PIP *.OBJ;*/DE
+>PIP *.TSK/PU
+>INS TCUCLK/TASK=...TCU
+>@ <EOF>
 
 If the TCU task is installed, it removes it before continuing, and then it installs it
 again once it has been built. So to test the new version, you can simply run TCU.
