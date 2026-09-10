@@ -26,8 +26,9 @@ TCUBSE  =      0171200
 TCUYER  =      26.                ;2-DIGIT YEAR, DECIMAL
 ;
 START:  DIR$   #GETMCR            ;REQUEST COMMAND LINE
-        BCS    ERROR              ;ERROR?
-        MOV    #GETMCR+G.MCRB,R0  ;POINT TO BUFFER
+        BCC    2$
+        BR     ERROR              ;ERROR?
+2$:     MOV    #GETMCR+G.MCRB,R0  ;POINT TO BUFFER
 ;
 ; PROCESS COMMAND LIKE ARGUMENTS
 ;
@@ -49,22 +50,34 @@ START:  DIR$   #GETMCR            ;REQUEST COMMAND LINE
 ;
 ; SET THE OS DATE & TIME FROM THE TCU-50
 ;
-DOTIM:  MOV    #OUTLF,IOBUF
-        MOV    #1,BUFLEN
-        JSR    PC,PRINT
-;
+DOTIM:  
         JSR    PC,SETDAT
-;        SPWN$  #OUTBUF,#0,#0,#0,#OUTDAT,#20
         DIR$   #TIMTSK
         DIR$   #TSKWT
-        BCS    ERROR
+        CMP    @#ESBBLK,#IS.SUC
+        BNE    1$
 ;
-        MOV    #OUTBUF,IOBUF
-        MOV    #OUTBSZ,BUFLEN
+        MOV    #OUTLF,IOBUF
+        MOV    #1,BUFLEN
+        JSR    PC,PRINT
+        MOV    #OUTDAT,IOBUF
+        MOV    #20.,BUFLEN
         JSR    PC,PRINT
         BR     2$
 ;
-1$:     MOV    #SPNERR,IOBUF
+1$:     MOV    @#ESBBLK,R1
+        MOV    #SPNESD,R0
+        MOV    #10412,R2
+        CALL   $CBTA
+;
+        MOV    #ESBBLK,R2
+        ADD    #2,R2
+        MOV    (R2),R1
+        MOV    #SPNEED,R0
+        MOV    #10412,R2
+        CALL   $CBTA
+;
+        MOV    #SPNERR,IOBUF
         MOV    #SPNESZ,BUFLEN
         JSR    PC,PRINT
 ;
@@ -183,22 +196,26 @@ GETMCR: GMCR$
 ;
 TIMBUF: .BLKW  8.
 GETTIM: GTIM$  TIMBUF
-TIMTSK: SPWN$  ...TIM,,,,,1,,,OUTDAT,20.
+TIMTSK: SPWN$ ...MCR,,,,,1,,ESBBLK,OUTBUF,OUTBSZ
 TSKWT:  WTSE$  1
 ;
 ; TEXT STRINGS
 ;
         .EVEN
+MCRNAM: .ASCII /...MCR/
 ARGERR: .ASCII <012><015>/ MISSING OR INVALID ARGUMENT/<015>
 ARGESZ= .-ARGERR
-SPNERR: .ASCII <012><015>/ ERROR SETTING SYSTEM TIME/<015>
+SPNERR: .ASCII <012><015>/ ERROR SETTING SYSTEM TIME /
+SPNESD: .ASCII /    -/
+SPNEED: .ASCII /    /<015>
 SPNESZ= .-SPNERR
 ;
 ; BUFFER FOR TIM-COMMAND
 ;
+        .EVEN
 OUTLF:  .ASCII <012><0>
-OUTBUF: .ASCII /TIM   /
-OUTDAT: .BLKB  20.
+OUTBUF: .ASCII /TIM /
+OUTDAT: .ASCII /                    /
 OUTBSZ= .-OUTBUF
 HOUR:   .WORD  0
 MIN:    .WORD  0
@@ -213,5 +230,8 @@ ARGLST: .ASCII <057>/SETTIM/<0><0>
         .ASCII <057>/SETTCU/<0><1>
         .ASCII <057>/CHKTCU/<0><2>
         .BYTE  <377>,<377>
+;
+        .EVEN
+ESBBLK: .BLKW  8.
 ;
         .END   START
