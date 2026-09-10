@@ -26,6 +26,8 @@ The valid arguments are:
 
   /CHKTCU   This can be used to see what the TCU-50's current date and time are right now.
 
+  /IDENT    The utility displays its version info and exits.
+
   To build the utility, simply run the TCUBLD,CMD command file:
 
 >@tcubld
