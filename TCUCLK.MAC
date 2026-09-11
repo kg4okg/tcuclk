@@ -92,6 +92,7 @@ DOTIM:
 ;
 DOTCU:
         DIR$   #GETTIM           ;GET TIME FROM THE OS
+        CLR    R0                ;ENSURE ALL ZEROS
         MOV    TIMBUF+G.TIMO,R0  ;GET MONTH FROM BUFFER
         SWAB   R0                ;MOVE TO UPPER BYTE
         ADD    TIMBUF+G.TIDA,R0  ;ADD THE DAY
@@ -101,6 +102,7 @@ DOTCU:
         BNE    1$                ;LOOP IF NOT
         MOV    R0,TCUBSE+4       ;STOP FAST CLOCK
 ;
+        CLR    R0                ;ENSURE ALL ZEROS
         MOV    TIMBUF+G.TIHR,R0  ;GET HOURS FROM BUFFER
         SWAB   R0                ;MOVE TO UPPER BYTE
         ADD    TIMBUF+G.TIMI,R0  ;ADD THE MINUTES
