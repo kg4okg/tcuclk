@@ -9,10 +9,10 @@
 ;*********************************************************************
 ;
 ; VALID COMMAND LINE ARGUMENTS
-;   /SETTIM - SET OS CLOCK FROM TCU-50
-;   /SETTCU - SET TCU-50 FROM OS TIME
-;   /CHKTCU - CHECK TCU-50 DATE AND TIME
-;   /IDENT  - SHOW VERSION INFO AND EXIT
+;   /SETTIM or /ST - SET OS CLOCK FROM TCU-50
+;   /SETTCU or /SC - SET TCU-50 FROM OS TIME
+;   /CHKTCU or /CC - CHECK TCU-50 DATE AND TIME
+;   /IDENT  or /ID - SHOW VERSION INFO AND EXIT
 ;
 ;---------------------------------------------
 ; DEFINE SYSTEM MACROS WE WILL USE
@@ -216,7 +216,7 @@ SPNESD: .ASCII /    -/
 SPNEED: .ASCII /    /<015>
 SPNESZ= .-SPNERR
         .EVEN
-IDTMSG: .ASCII <012><015>/TCU-50 UTILITY, VERSION: 01/
+IDTMSG: .ASCII <012><015>/TCU-50 UTILITY, VERSION: 02/
         .ASCII <012><015>/2026 PETER EKSTROM./<015>
 IDTMSZ= .-IDTMSG
 ;
@@ -237,9 +237,13 @@ DAY:    .WORD  0
 ; LOOKUP LIST FOR COMMAND LINE ARGUMENTS
 ;
 ARGLST: .ASCII <057>/SETTIM/<0><0>
+        .ASCII <057>/ST<0><0>
         .ASCII <057>/SETTCU/<0><1>
+        .ASCII <057>/SC/<0><1>
         .ASCII <057>/CHKTCU/<0><2>
+        .ASCII <057>/CC/<0><2>
         .ASCII <057>/IDENT/<0><3>
+        .ASCII <057>/ID/<0><3>
         .BYTE  <377>,<377>
 ;
         .EVEN

@@ -18,15 +18,17 @@ Once this is done, it is accessible as TCU from the command line.
 
 The valid arguments are:
 
-  /SETTIM   This will tell TCU to get the date and time and use it to set the time in RSX.
-            Here we use a hardcoded year. currently set to 2026.
+  /SETTIM    This will tell TCU to get the date and time and use it to set the time in RSX.
+  or /ST     Here we use a hardcoded year. currently set to 2026.
 
   /SETTCU   This tells TCU to get the current date and time from RSX, and set the clock on
-            the TCU-50 board.
+  or /SC    the TCU-50 board.
 
   /CHKTCU   This can be used to see what the TCU-50's current date and time are right now.
+  or /CC
 
   /IDENT    The utility displays its version info and exits.
+  or /ID
 
   To build the utility, simply run the TCUBLD,CMD command file:
 ```
