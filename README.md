@@ -29,9 +29,9 @@ The valid arguments are:
 
   /IDENT    The utility displays its version info and exits.
   or /ID
+```
 
   To build the utility, simply run the TCUBLD,CMD command file:
-```
 ```
   >@tcubld
   >;*********************************************************************
