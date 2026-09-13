@@ -1,0 +1,18 @@
+;*************************************************************
+;
+;      TCUCFG.MAC
+;
+;      Date : 13-Sep-2026        P. Ekstrom
+;
+;*************************************************************
+;
+;
+; BASE ADDRESS OF THE TCU-50 CLOCK
+;
+;TCUBSE  =      0160770            ;DEFAULT FACTORY ADDRESS
+TCUBSE  =      0171200
+;
+; THE TCU-50 DOESN'T HAVE THE YEAR, SO SPECIFY HERE (YY)
+;
+TCUYER  =      2026.              ;2-DIGIT YEAR, DECIMAL
+
