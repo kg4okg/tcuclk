@@ -17,7 +17,7 @@ First, you have to install it in RSX so you can run it with command line paramet
 Once this is done, it is accessible as TCU from the command line.
 
 The valid arguments are:
-
+```
   /SETTIM    This will tell TCU to get the date and time and use it to set the time in RSX.
   or /ST     Here we use a hardcoded year. currently set to 2026.
 
@@ -31,6 +31,7 @@ The valid arguments are:
   or /ID
 
   To build the utility, simply run the TCUBLD,CMD command file:
+```
 ```
   >@tcubld
   >;*********************************************************************
